@@ -1,0 +1,36 @@
+﻿<Window x:Class="LogWatcher.Views.Main"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LogWatcher.Views"
+        xmlns:custemControl="clr-namespace:LogWatcher.CustomControls"
+        xmlns:extensions="clr-namespace:LogWatcher.Extensions"
+        xmlns:prism="http://prismlibrary.com/"
+        xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+        mc:Ignorable="d"
+        Title="Log文件监视" Height="300" Width="900" WindowStyle="None">
+    <Grid>
+        <DockPanel>
+            <md:ColorZone DockPanel.Dock="Top" Mode="PrimaryMid">
+                <DockPanel>
+                    <StackPanel Orientation="Horizontal"  DockPanel.Dock="Right">
+                        <Button x:Name="btnMin" Content="—" Style="{StaticResource MaterialDesignFlatMidBgButton}" Click="btnMin_Click"/>
+                        <Button x:Name="btnMax" Content="☐" Style="{StaticResource MaterialDesignFlatMidBgButton}" Click="btnMax_Click"/>
+                        <Button x:Name="btnClose" Content="✕" Style="{StaticResource MaterialDesignFlatMidBgButton}" Click="btnClose_Click"/>
+                    </StackPanel>
+                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" extensions:DraggableWindowBehavior.IsDraggable="True" FontSize="15" Text="Log文件监视"/>
+                </DockPanel>
+            </md:ColorZone>
+            <custemControl:ShowLastListBox md:ListBoxItemAssist.ShowSelection="False" DockPanel.Dock="Top" HorizontalContentAlignment="Stretch" ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                                           ItemsSource="{Binding MessageList}" extensions:DraggableWindowBehavior.IsDraggable="True">
+                <custemControl:ShowLastListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Foreground="Black" Text="{Binding}" />
+                    </DataTemplate>
+                </custemControl:ShowLastListBox.ItemTemplate>
+            </custemControl:ShowLastListBox>
+        </DockPanel>
+    </Grid>
+</Window>
