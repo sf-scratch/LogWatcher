@@ -10,6 +10,11 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Shapes;
+using System.Diagnostics;
+using System.Windows.Controls;
+using System.Windows.Interop;
+using System.Runtime.InteropServices.ComTypes;
+using System.Configuration;
 
 namespace LogWatcher.Utils
 {
@@ -19,7 +24,7 @@ namespace LogWatcher.Utils
 
         private ObservableCollection<string> messageList;
 
-        public LogListenerServer(string path, ObservableCollection<string> messageList)
+        public LogListenerServer(string path, IPAddress masterIPAddress, int masterPort, ObservableCollection<string> messageList)
         {
             this.messageList = messageList;
             this.watcher = new FileSystemWatcher();
@@ -36,7 +41,7 @@ namespace LogWatcher.Utils
                 this.watcher = null;
                 PrintMessage($"Error: {ex.Message}");
             }
-            ConnectToServer();
+            ConnectToServer(masterIPAddress, masterPort);
         }
 
         public void Start()
@@ -71,46 +76,71 @@ namespace LogWatcher.Utils
                         PrintMessage(line);
                     }
                 }
-                Send(builder.ToString());
-
+                SendMsgToMaster(builder.ToString());
             }
         }
 
         private TcpClient client;
 
-        private void ConnectToServer()
+        private void ConnectToServer(IPAddress masterIPAddress, int masterPort)
         {
             client = new TcpClient(AddressFamily.InterNetwork);
-            client.Connect(IPAddress.Parse("192.168.0.14"), 8100);
-            Send("Hello from client");
+            client.Connect(masterIPAddress, masterPort);
+            SendMsgToMaster("Hello from client");
         }
 
-        private void Send(string message)
+        private void SendMsgToMaster(string msg)
         {
             try
             {
-                if (client.Connected)
+                if (this.client.Connected)
                 {
-                    using (NetworkStream stream = client.GetStream())
-                    using (BinaryWriter writer = new BinaryWriter(stream, Encoding.UTF8))
-                    using (BinaryReader reader = new BinaryReader(stream, Encoding.UTF8))
-                    {
-                        //发送消息给主控
-                        writer.Write(message);
-                        //消息发送完毕主控会回复消息
-                        string receiveMessage = reader.ReadString();
-                        PrintMessage(receiveMessage);
-                    }
+                    NetworkStream stream = this.client.GetStream();
+                    byte[] msgData = Encoding.UTF8.GetBytes(msg);
+                    long totalBytes = sizeof(long) + msgData.Length;
+                    byte[] totalBytesData = BitConverter.GetBytes(totalBytes);
+                    stream.Write(totalBytesData, 0, totalBytesData.Length);//发送总字节数
+                    stream.Write(msgData, 0, msgData.Length);//发送消息给主控
+
+                    string receiveMsg = ReceiveMsgByMaster(stream);//阻塞，接收主控的回复消息
+                    PrintMessage(receiveMsg);
                 }
                 else
                 {
-                    PrintMessage("与主控的连接已断开");
+                    PrintMessage("与主控的连接已断开，无法发送消息！");
                 }
             }
             catch (Exception e)
             {
                 PrintMessage(e.Message);
             }
+        }
+
+        private string ReceiveMsgByMaster(NetworkStream stream)
+        {
+            string msg = string.Empty;
+            byte[] longBuffer = new byte[sizeof(long)];
+            long totalBytes = 0;
+            if (stream.Read(longBuffer, 0, longBuffer.Length) == sizeof(long))
+            {
+                totalBytes = BitConverter.ToInt64(longBuffer, 0);
+                byte[] msgData = new byte[totalBytes - longBuffer.Length];
+                long numBytesRead = stream.Read(msgData, 0, msgData.Length);
+                if (numBytesRead == msgData.Length)
+                {
+                    msg = Encoding.UTF8.GetString(msgData);
+                }
+                else
+                {
+                    msg = "接收的消息异常";
+                }
+            }
+            else
+            {
+                msg = string.Empty;
+            }
+
+            return msg;
         }
 
         private void PrintMessage(string message)
