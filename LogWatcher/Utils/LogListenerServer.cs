@@ -5,8 +5,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Shapes;
 
 namespace LogWatcher.Utils
 {
@@ -33,6 +36,7 @@ namespace LogWatcher.Utils
                 this.watcher = null;
                 PrintMessage($"Error: {ex.Message}");
             }
+            ConnectToServer();
         }
 
         public void Start()
@@ -53,14 +57,59 @@ namespace LogWatcher.Utils
         {
             if (e.ChangeType == WatcherChangeTypes.Created)
             {
-                PrintMessage($"新增: {e.Name}");
-                LogContentParser logParser = new LogContentParser();
-                logParser.LoadLogFile(e.FullPath);
-                List<string> list = logParser.ParseToList();
-                foreach (string line in list)
+                StringBuilder builder = new StringBuilder();
+                using (StringWriter writer = new StringWriter(builder))
                 {
-                    PrintMessage(line);
+                    PrintMessage(string.Empty);
+                    PrintMessage($"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")} [新增] {e.Name}");
+                    LogContentParser logParser = new LogContentParser();
+                    logParser.LoadLogFile(e.FullPath);
+                    List<string> list = logParser.ParseToList();
+                    foreach (string line in list)
+                    {
+                        writer.WriteLine(line);
+                        PrintMessage(line);
+                    }
                 }
+                Send(builder.ToString());
+
+            }
+        }
+
+        private TcpClient client;
+
+        private void ConnectToServer()
+        {
+            client = new TcpClient(AddressFamily.InterNetwork);
+            client.Connect(IPAddress.Parse("192.168.0.14"), 8100);
+            Send("Hello from client");
+        }
+
+        private void Send(string message)
+        {
+            try
+            {
+                if (client.Connected)
+                {
+                    using (NetworkStream stream = client.GetStream())
+                    using (BinaryWriter writer = new BinaryWriter(stream, Encoding.UTF8))
+                    using (BinaryReader reader = new BinaryReader(stream, Encoding.UTF8))
+                    {
+                        //发送消息给主控
+                        writer.Write(message);
+                        //消息发送完毕主控会回复消息
+                        string receiveMessage = reader.ReadString();
+                        PrintMessage(receiveMessage);
+                    }
+                }
+                else
+                {
+                    PrintMessage("与主控的连接已断开");
+                }
+            }
+            catch (Exception e)
+            {
+                PrintMessage(e.Message);
             }
         }
 

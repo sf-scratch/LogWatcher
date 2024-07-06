@@ -15,7 +15,6 @@ namespace LogWatcher.CustomControls
 {
     public class ShowLastListBox : ListBox
     {
-
         /// <summary>
         /// 获取和设置最大容量
         /// </summary>
@@ -32,7 +31,6 @@ namespace LogWatcher.CustomControls
         protected override void OnItemsChanged(NotifyCollectionChangedEventArgs e)
         {
             if (e.NewItems == null) { return; }
-
             //维持数据量在MaxCount内
             if (this.Items.Count >= MaxCount)
             {
@@ -45,10 +43,10 @@ namespace LogWatcher.CustomControls
                     }
                 }
             }
-
             //滚动到最后一行
             ScrollViewer scroll = CustomVisualTreeHelper.FindVisualChild<ScrollViewer>(this);
             scroll.ScrollToBottom();
+
             base.OnItemsChanged(e);
         }
 

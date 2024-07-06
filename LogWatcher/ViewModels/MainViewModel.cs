@@ -3,9 +3,11 @@ using Prism.Mvvm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Input;
 
 namespace LogWatcher.ViewModels
 {
@@ -27,7 +29,7 @@ namespace LogWatcher.ViewModels
 
         private void OpenServer()
         {
-            LogListenerServer server = new LogListenerServer(@"C:\Users\17632\Desktop\TestDateSummary\product1\TempLOG\NG", this.messageList);
+            LogListenerServer server = new LogListenerServer(ConfigurationManager.AppSettings["NgLogFolder"], this.messageList);
             server.Start();
         }
     }
