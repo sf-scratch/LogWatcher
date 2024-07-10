@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows.Shapes;
 
 namespace LogWatcher.Parsers
 {
@@ -46,46 +48,36 @@ namespace LogWatcher.Parsers
                         block.Number = GetNumber(preLine.Substring(0, pointIndex));
                         curNumber = block.Number;
                         block.Title = preLine.Substring(pointIndex + 1, preLine.Length - (pointIndex + 1)).Trim();
-                        block.Content = GetContent(reader, curNumber, ref preLine, ref line);
+                        block.Content = GetContent(reader, curNumber);
                         dataBlocks.Add(block);
                     }
-                    else
-                    {
-                        preLine = line;
-                        line = reader.ReadLine();
-                    }
+                    preLine = line;
+                    line = reader.ReadLine();
                 }
             }
 
             return dataBlocks;
         }
 
-        private string GetContent(StreamReader reader, int curNumber, ref string preLine, ref string line)
+        private string GetContent(StreamReader reader, int curNumber)
         {
             string content = string.Empty;
             if (reader != null)
             {
-                preLine = reader.ReadLine();
-                line = reader.ReadLine();
-                if (line == null)
-                {
-                    return content;
-                }
-
                 StringBuilder builder = new StringBuilder();
-                while (!CheckIsHead(curNumber, preLine, line))
+                string line = reader.ReadLine();
+                while (line != null && !CheckIsTail(line))
                 {
-                    builder.AppendLine(preLine);
-                    preLine = line;
+                    builder.AppendLine(line);
                     line = reader.ReadLine();
-                    if (line == null)
-                    {
-                        return content;
-                    }
+                }
+                if (line != null)//如果line不为null，则表示line为行尾，需要添加进Content中
+                {
+                    builder.AppendLine(line);
                 }
                 content = builder.ToString();
             }
-            ASCIIEncoding encoding = new ASCIIEncoding();
+            ASCIIEncoding encoding = new ASCIIEncoding();//解决乱码问题
             content = encoding.GetString(encoding.GetBytes(content));
             return content;
         }
@@ -102,6 +94,13 @@ namespace LogWatcher.Parsers
                 }
             }
             return isHead;
+        }
+
+        private bool CheckIsTail(string line)
+        {
+            string pattern = @"Test Time: \d+\.\d+? sec";
+            Match match = Regex.Match(line, pattern);
+            return match.Success;
         }
 
         private int GetNumber(string numString)
