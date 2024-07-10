@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows.Documents;
 using System.Windows.Shapes;
 
 namespace LogWatcher.Parsers
@@ -45,10 +46,10 @@ namespace LogWatcher.Parsers
                     {
                         DataBlock block = new DataBlock();
                         int pointIndex = preLine.IndexOf('.');
-                        block.Number = GetNumber(preLine.Substring(0, pointIndex));
-                        curNumber = block.Number;
                         block.Title = preLine.Substring(pointIndex + 1, preLine.Length - (pointIndex + 1)).Trim();
-                        block.Content = GetContent(reader, curNumber);
+                        SetNumber(block, preLine.Substring(0, pointIndex));
+                        curNumber = block.Number;
+                        SetContentAndStatus(block, reader, curNumber);
                         dataBlocks.Add(block);
                     }
                     preLine = line;
@@ -59,15 +60,15 @@ namespace LogWatcher.Parsers
             return dataBlocks;
         }
 
-        private string GetContent(StreamReader reader, int curNumber)
+        private void SetContentAndStatus(DataBlock block, StreamReader reader, int curNumber)
         {
-            string content = string.Empty;
             if (reader != null)
             {
                 StringBuilder builder = new StringBuilder();
                 string line = reader.ReadLine();
                 while (line != null && !CheckIsTail(line))
                 {
+                    SetStatus(block, line);
                     builder.AppendLine(line);
                     line = reader.ReadLine();
                 }
@@ -75,11 +76,23 @@ namespace LogWatcher.Parsers
                 {
                     builder.AppendLine(line);
                 }
-                content = builder.ToString();
+                string content = content = builder.ToString();
+                ASCIIEncoding encoding = new ASCIIEncoding();//解决乱码问题
+                content = encoding.GetString(encoding.GetBytes(content));
+                block.Content = content;
             }
-            ASCIIEncoding encoding = new ASCIIEncoding();//解决乱码问题
-            content = encoding.GetString(encoding.GetBytes(content));
-            return content;
+        }
+
+        private void SetStatus(DataBlock block, string line)
+        {
+            if (line.Trim() == (TestStatus.PASS.ToString()))
+            {
+                block.Status = TestStatus.PASS;
+            }
+            else if (line.Trim() == (TestStatus.FAIL.ToString()))
+            {
+                block.Status = TestStatus.FAIL;
+            }
         }
 
         private bool CheckIsHead(int curNumber, string preLine, string line)
@@ -103,14 +116,14 @@ namespace LogWatcher.Parsers
             return match.Success;
         }
 
-        private int GetNumber(string numString)
+        private void SetNumber(DataBlock block, string numString)
         {
             int number;
             if (!int.TryParse(numString, out number))
             {
                 Console.WriteLine("ParseNumber出错");
             }
-            return number;
+            block.Number = number;
         }
     }
 }

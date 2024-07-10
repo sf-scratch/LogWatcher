@@ -98,6 +98,7 @@
     <Compile Include="Parsers\DataBlock.cs" />
     <Compile Include="Parsers\LogContentParser.cs" />
     <Compile Include="Parsers\LogStructureParser.cs" />
+    <Compile Include="Parsers\TestStatus.cs" />
     <Compile Include="Utils\CustomVisualTreeHelper.cs" />
     <Compile Include="Utils\DateUtil.cs" />
     <Compile Include="Utils\LogListenerServer.cs" />

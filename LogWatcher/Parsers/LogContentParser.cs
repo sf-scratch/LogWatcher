@@ -55,68 +55,46 @@ namespace LogWatcher.Parsers
             List<string> parsedList = new List<string>();
             foreach (DataBlock block in this.blocks)
             {
-                int endRowIndex;
-                if (CheckFail(block, out endRowIndex))
+                if (block.Status == TestStatus.FAIL)
                 {
                     parsedList.Add(block.Title);
-                    parsedList.AddRange(GetFailPropertyList(block, endRowIndex));
+                    parsedList.AddRange(GetFailPropertyList(block));
+                    parsedList.Add(string.Empty);//分割
                 }
+            }
+            if (parsedList.Count > 0)//移除末尾多出的分割
+            {
+                parsedList.RemoveAt(parsedList.Count - 1);
             }
             return parsedList;
         }
 
-        private List<string> GetFailPropertyList(DataBlock block, int endRowIndex)
+        private List<string> GetFailPropertyList(DataBlock block)
         {
             List<string> failList = new List<string>();
             string lastNotEmptyLine = string.Empty;
             using (StringReader reader = new StringReader(block.Content))
             {
                 string line = reader.ReadLine();
-                for (int i = 0; i < endRowIndex; i++)
+                while (line != null && line.Trim() != block.Status.ToString())//当line为空或是读取到测试的最终结果时，跳出循环
                 {
                     if (!string.IsNullOrEmpty(line))
                     {
                         lastNotEmptyLine = line;
-                        if (line.Contains(FAIL_SIGN))
-                        {
-                            failList.Add(line);
-                        }
-                        line = reader.ReadLine();
                     }
-                    else
+                    if (line.Contains(FAIL_SIGN))
                     {
-                        break;
+                        failList.Add(line);
                     }
+                    line = reader.ReadLine();
                 }
             }
-
             //如果匹配不到带有 FAIL_SIGN 的行，则添加最后一个不为空字符串的行
             if (failList.Count == 0)
             {
                 failList.Add(lastNotEmptyLine);
             }
             return failList;
-        }
-
-        private bool CheckFail(DataBlock block, out int endRowIndex)
-        {
-            bool isFail = false;
-            endRowIndex = -1;
-            using (StringReader reader = new StringReader(block.Content))
-            {
-                string line = reader.ReadLine();
-                while (line != null)
-                {
-                    endRowIndex++;
-                    if (line.Trim() == FAIL_SIGN)
-                    {
-                        isFail = true;
-                        break;
-                    }
-                    line = reader.ReadLine();
-                }
-            }
-            return isFail;
         }
     }
 }

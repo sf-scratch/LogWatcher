@@ -13,13 +13,14 @@ namespace LogWatcher.Parsers
             number = 0;
             title = string.Empty;
             content = string.Empty;
+            status = TestStatus.None;
         }
+        
+        private int number;
 
         /// <summary>
         /// 序号
         /// </summary>
-        private int number;
-
         public int Number
         {
             get { return number; }
@@ -27,27 +28,39 @@ namespace LogWatcher.Parsers
         }
 
 
+        
+        private string title;
+
         /// <summary>
         /// 标题
         /// </summary>
-        private string title;
-
         public string Title
         {
             get { return title; }
             set { title = value; }
         }
 
+        private string content;
 
         /// <summary>
         /// 内容
         /// </summary>
-        private string content;
-
         public string Content
         {
             get { return content; }
             set { content = value; }
         }
+
+        private TestStatus status;
+
+        /// <summary>
+        /// 测试结果状态
+        /// </summary>
+        public TestStatus Status
+        {
+            get { return status; }
+            set { status = value; }
+        }
+
     }
 }
