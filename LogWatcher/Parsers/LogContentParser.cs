@@ -68,13 +68,15 @@ namespace LogWatcher.Parsers
         private List<string> GetFailPropertyList(DataBlock block, int endRowIndex)
         {
             List<string> failList = new List<string>();
+            string lastNotEmptyLine = string.Empty;
             using (StringReader reader = new StringReader(block.Content))
             {
                 string line = reader.ReadLine();
                 for (int i = 0; i < endRowIndex; i++)
                 {
-                    if (line != null)
+                    if (!string.IsNullOrEmpty(line))
                     {
+                        lastNotEmptyLine = line;
                         if (line.Contains(FAIL_SIGN))
                         {
                             failList.Add(line);
@@ -86,6 +88,12 @@ namespace LogWatcher.Parsers
                         break;
                     }
                 }
+            }
+
+            //如果匹配不到带有 FAIL_SIGN 的行，则添加最后一个不为空字符串的行
+            if (failList.Count == 0)
+            {
+                failList.Add(lastNotEmptyLine);
             }
             return failList;
         }
