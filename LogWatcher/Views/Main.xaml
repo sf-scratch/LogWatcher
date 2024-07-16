@@ -16,6 +16,7 @@
             <md:ColorZone DockPanel.Dock="Top" Mode="PrimaryMid">
                 <DockPanel>
                     <StackPanel Orientation="Horizontal"  DockPanel.Dock="Right">
+                        <CheckBox Style="{StaticResource MaterialDesignDarkCheckBox}" Content="自动重连" IsChecked="{Binding IsAutoReconnection}"/>
                         <Button x:Name="btnMin" Content="—" Style="{StaticResource MaterialDesignFlatMidBgButton}" Click="btnMin_Click"/>
                         <Button x:Name="btnMax" Content="☐" Style="{StaticResource MaterialDesignFlatMidBgButton}" Click="btnMax_Click"/>
                         <Button x:Name="btnClose" Content="✕" Style="{StaticResource MaterialDesignFlatMidBgButton}" Click="btnClose_Click"/>

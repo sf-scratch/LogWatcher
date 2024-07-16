@@ -17,44 +17,79 @@ using System.Runtime.InteropServices.ComTypes;
 using System.Configuration;
 using LogWatcher.DTOs;
 using Newtonsoft.Json;
+using LogWatcher.ViewModels;
+using System.Threading;
+using System.Net.Http;
 
 namespace LogWatcher.Utils
 {
-    public class LogListenerServer
+    internal class LogListenerServer
     {
+        public event Action<string> PrintMessage;
+
         private FileSystemWatcher ngWatcher;
 
         private FileSystemWatcher passWatcher;
 
-        private ObservableCollection<string> messageList;
+        private IPAddress masterIPAddress;
 
-        public LogListenerServer(string ngPath, string passPath, IPAddress masterIPAddress, int masterPort, ObservableCollection<string> messageList)
+        private int masterPort;
+
+        private TcpClient client;
+
+        private bool isAutoReconnection;
+
+        private bool isConnecting;
+
+        public bool IsAutoReconnection
         {
-            this.messageList = messageList;
+            get { return isAutoReconnection; }
+            set
+            {
+                isAutoReconnection = value;
+                if (isAutoReconnection)
+                {
+                    PrintMessage?.Invoke("已开启自动重连");
+                    if (this.client == null || !this.client.Connected)
+                    {
+                        ConnectToServer("重新连接");
+                    }
+                }
+            }
+        }
+
+
+        public LogListenerServer(string ngPath, string passPath, IPAddress masterIPAddress, int masterPort)
+        {
+            this.isAutoReconnection = true;
+            this.isConnecting = false;
+            this.masterIPAddress = masterIPAddress;
+            this.masterPort = masterPort;
             this.ngWatcher = new FileSystemWatcher();
             InitWatcher(this.ngWatcher, ngPath);
             this.ngWatcher.Created += new FileSystemEventHandler(NgCreated);
             this.passWatcher = new FileSystemWatcher();
             InitWatcher(this.passWatcher, passPath);
             this.passWatcher.Created += new FileSystemEventHandler(PassCreated);
-            ConnectToServer(masterIPAddress, masterPort);
         }
 
         public void Start()
         {
-            PrintMessage($"{this.ngWatcher.Path} 文件监控已经启动...");
+            PrintMessage?.Invoke("已开启自动重连");
+            ConnectToServer("Hello from Slave");
+            PrintMessage?.Invoke($"{this.ngWatcher.Path} 文件监控已经启动...");
             this.ngWatcher.EnableRaisingEvents = true;
-            PrintMessage($"{this.passWatcher.Path} 文件监控已经启动...");
+            PrintMessage?.Invoke($"{this.passWatcher.Path} 文件监控已经启动...");
             this.passWatcher.EnableRaisingEvents = true;
         }
 
         public void Stop()
         {
-            PrintMessage($"{this.ngWatcher.Path} 文件监控已经停止...");
+            PrintMessage?.Invoke($"{this.ngWatcher.Path} 文件监控已经停止...");
             this.ngWatcher.EnableRaisingEvents = false;
             this.ngWatcher.Dispose();
             this.ngWatcher = null;
-            PrintMessage($"{this.passWatcher.Path} 文件监控已经停止...");
+            PrintMessage?.Invoke($"{this.passWatcher.Path} 文件监控已经停止...");
             this.passWatcher.EnableRaisingEvents = false;
             this.passWatcher.Dispose();
             this.passWatcher = null;
@@ -72,7 +107,7 @@ namespace LogWatcher.Utils
                 watcher.EnableRaisingEvents = false;
                 watcher.Dispose();
                 watcher = null;
-                PrintMessage($"Error: {ex.Message}");
+                PrintMessage?.Invoke($"Error: {ex.Message}");
             }
         }
 
@@ -86,22 +121,22 @@ namespace LogWatcher.Utils
                     StringBuilder builder = new StringBuilder();
                     using (StringWriter writer = new StringWriter(builder))
                     {
-                        PrintMessage(string.Empty);
-                        PrintMessage($"{DateUtil.Now}   [NG]    {e.Name}");
+                        PrintMessage?.Invoke(string.Empty);
+                        PrintMessage?.Invoke($"{DateUtil.Now}   [NG]    {e.Name}");
                         LogContentParser logParser = new LogContentParser();
                         logParser.LoadLogFile(e.FullPath);
                         List<string> list = logParser.ParseToList();
                         foreach (string line in list)
                         {
                             writer.WriteLine(line);
-                            PrintMessage(line);
+                            PrintMessage?.Invoke(line);
                         }
                     }
                     if (SendMsgDTOToMaster(builder.ToString().Trim()))
                     {
                         string receiveMsg;
                         ReceiveMsgByMaster(out receiveMsg);//阻塞，接收主控的回复消息
-                        PrintMessage(receiveMsg);
+                        PrintMessage?.Invoke(receiveMsg);
                     }
                 }
             }
@@ -114,37 +149,53 @@ namespace LogWatcher.Utils
                 string fileSuffix = e.Name.Split('.').Last();
                 if (fileSuffix == "log")
                 {
-                    PrintMessage(string.Empty);
-                    PrintMessage($"{DateUtil.Now}   [PASS]  {e.Name}");
+                    PrintMessage?.Invoke(string.Empty);
+                    PrintMessage?.Invoke($"{DateUtil.Now}   [PASS]  {e.Name}");
                     if (SendMsgDTOToMaster("PASS"))
                     {
                         string receiveMsg;
                         ReceiveMsgByMaster(out receiveMsg);//阻塞，接收主控的回复消息
-                        PrintMessage(receiveMsg);
+                        PrintMessage?.Invoke(receiveMsg);
                     }
                 }
             }
         }
 
-        private TcpClient client;
-
-        private async void ConnectToServer(IPAddress masterIPAddress, int masterPort)
+        private async void ConnectToServer(string msg)
         {
-            this.client = new TcpClient(AddressFamily.InterNetwork);
-            try
+            if (!this.isConnecting && this.isAutoReconnection)
             {
-                await this.client.ConnectAsync(masterIPAddress, masterPort);
-            }
-            catch (Exception e)
-            {
-                PrintMessage(e.Message);
-            }
+                this.isConnecting = true;//是否正在连接中
+                do
+                {
+                    try
+                    {
+                        this.client = new TcpClient(AddressFamily.InterNetwork);
+                        await this.client.ConnectAsync(this.masterIPAddress, this.masterPort);
+                        if (SendMsgDTOToMaster(msg))
+                        {
+                            string receiveMsg;
+                            ReceiveMsgByMaster(out receiveMsg);//阻塞，接收主控的回复消息
+                            PrintMessage?.Invoke(receiveMsg);
+                            break;
+                        }
+                        this.isConnecting = false;
+                    }
+                    catch (Exception e)
+                    {
+                        PrintMessage?.Invoke(e.Message);
+                        PrintMessage?.Invoke($"连接主控 {this.masterIPAddress.ToString()}:{this.masterPort} 失败");
+                        // 等待一段时间然后重试
+                        await Task.Delay(3000);
+                    }
+                } while (this.isAutoReconnection);
 
-            if (SendMsgDTOToMaster("Hello from client"))
-            {
-                string receiveMsg;
-                ReceiveMsgByMaster(out receiveMsg);//阻塞，接收主控的回复消息
-                PrintMessage(receiveMsg);
+                //走出循环且仍在连接中，则表示关闭自动重连
+                if (this.isConnecting)
+                {
+                    PrintMessage?.Invoke("已关闭自动重连");
+                    this.isConnecting = false;
+                }
             }
         }
 
@@ -172,12 +223,14 @@ namespace LogWatcher.Utils
                 }
                 else
                 {
-                    PrintMessage("与主控的连接已断开，无法发送消息！");
+                    PrintMessage?.Invoke("与主控的连接已断开，无法发送消息！");
+                    ConnectToServer("重新连接");
                 }
             }
             catch (Exception e)
             {
-                PrintMessage(e.Message);
+                PrintMessage?.Invoke(e.Message);
+                ConnectToServer("重新连接");
             }
             return send;
         }
@@ -214,21 +267,15 @@ namespace LogWatcher.Utils
                 else
                 {
                     msg = "与主控的连接已断开，无法发送消息！";
+                    ConnectToServer("重新连接");
                 }
             }
             catch (Exception e)
             {
                 msg = e.Message;
+                ConnectToServer("重新连接");
             }
             return result;
-        }
-
-        private void PrintMessage(string message)
-        {
-            PrismApplication.Current.Dispatcher.Invoke(() =>
-            {
-                this.messageList.Add(message);
-            });
         }
     }
 }
