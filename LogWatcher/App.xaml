@@ -3,13 +3,17 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:LogWatcher"
              xmlns:prism="http://prismlibrary.com/"
-             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:tb="http://www.hardcodet.net/taskbar">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="BlueGrey"  SecondaryColor="Lime" />
-                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesign3.Defaults.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesign3.Defaults.xaml">
+                </ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
+            <!--<tb:TaskbarIcon x:Key="Taskbar" IconSource="/Assets/Nita.ico" LeftClickCommand="{Binding ShowMainWindowCommand}"
+                                    ToolTipText="你好！可点击系统托盘或按下Alt+O再次打开窗口" />-->
         </ResourceDictionary>
     </Application.Resources>
 </prism:PrismApplication>

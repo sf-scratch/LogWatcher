@@ -8,11 +8,22 @@
         xmlns:extensions="clr-namespace:LogWatcher.Extensions"
         xmlns:prism="http://prismlibrary.com/"
         xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:tb="http://www.hardcodet.net/taskbar"
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         mc:Ignorable="d"
         Title="Log文件监视" Height="300" Width="900" WindowStyle="None">
     <Grid>
         <DockPanel>
+            <!--最小化托盘图标-->
+            <tb:TaskbarIcon x:Name="NotifyIcon" IconSource="/Image/LogIcon.ico" TrayMouseDoubleClick="NotifyIcon_TrayMouseDoubleClick">
+                <tb:TaskbarIcon.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem x:Name="ShowLogWatcher" Header="显示" Click="ShowLogWatcher_Click"/>
+                        <MenuItem x:Name="ExitLogWatcher" Header="退出" Click="ExitLogWatcher_Click"/>
+                    </ContextMenu>
+                </tb:TaskbarIcon.ContextMenu>
+            </tb:TaskbarIcon>
+            
             <md:ColorZone DockPanel.Dock="Top" Mode="PrimaryMid">
                 <DockPanel>
                     <StackPanel Orientation="Horizontal"  DockPanel.Dock="Right">

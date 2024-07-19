@@ -14,12 +14,18 @@ namespace LogWatcher.DTOs
         public MsgDTO(string msg)
         {
             this.Msg = msg;
+            this.Type = MsgType.None;
         }
 
         /// <summary>
         /// 消息内容
         /// </summary>
         public string Msg { get; set; }
+
+        /// <summary>
+        /// 消息类型
+        /// </summary>
+        public MsgType Type { get; set; }
 
         /// <summary>
         /// 主机号
@@ -35,5 +41,23 @@ namespace LogWatcher.DTOs
         /// 发送方端口号
         /// </summary>
         public int SenderPort { get; set; }
+    }
+
+    public enum MsgType
+    {
+        /// <summary>
+        /// 普通消息
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// 测试通过
+        /// </summary>
+        PASS,
+
+        /// <summary>
+        /// 测试失败
+        /// </summary>
+        NG
     }
 }

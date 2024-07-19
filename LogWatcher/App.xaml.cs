@@ -1,5 +1,7 @@
-﻿using LogWatcher.ViewModels;
+﻿using Hardcodet.Wpf.TaskbarNotification;
+using LogWatcher.ViewModels;
 using LogWatcher.Views;
+using Prism.Commands;
 using Prism.DryIoc;
 using Prism.Ioc;
 using System;

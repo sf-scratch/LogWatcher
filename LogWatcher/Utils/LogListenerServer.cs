@@ -20,16 +20,17 @@ using Newtonsoft.Json;
 using LogWatcher.ViewModels;
 using System.Threading;
 using System.Net.Http;
+using LogWatcher.Extensions;
 
 namespace LogWatcher.Utils
 {
     internal class LogListenerServer
     {
-        public event Action<string> PrintMessage;
+        public event Action<string> PrintMessage;//打印消息事件
 
-        private FileSystemWatcher ngWatcher;
+        private FileSystemWatcher ngWatcher;//NG文件夹监控
 
-        private FileSystemWatcher passWatcher;
+        private FileSystemWatcher passWatcher;//PASS文件夹监控
 
         private IPAddress masterIPAddress;
 
@@ -37,20 +38,21 @@ namespace LogWatcher.Utils
 
         private TcpClient client;
 
-        private bool isAutoReconnection;
+        private bool isAutoReconnection;//是否开启自动重连
 
-        private bool isConnecting;
+        private bool isConnecting;//是否正在创建TCP连接中
 
         public bool IsAutoReconnection
         {
             get { return isAutoReconnection; }
             set
             {
+                bool closeToOpen = !isAutoReconnection && value;
                 isAutoReconnection = value;
-                if (isAutoReconnection)
+                if (closeToOpen)
                 {
                     PrintMessage?.Invoke("已开启自动重连");
-                    if (this.client == null || !this.client.Connected)
+                    if (!this.client.IsOnline())
                     {
                         ConnectToServer("重新连接");
                     }
@@ -132,7 +134,7 @@ namespace LogWatcher.Utils
                             PrintMessage?.Invoke(line);
                         }
                     }
-                    if (SendMsgDTOToMaster(builder.ToString().Trim()))
+                    if (SendMsgDTOToMaster(builder.ToString().Trim(), MsgType.NG))
                     {
                         string receiveMsg;
                         ReceiveMsgByMaster(out receiveMsg);//阻塞，接收主控的回复消息
@@ -151,7 +153,7 @@ namespace LogWatcher.Utils
                 {
                     PrintMessage?.Invoke(string.Empty);
                     PrintMessage?.Invoke($"{DateUtil.Now}   [PASS]  {e.Name}");
-                    if (SendMsgDTOToMaster("PASS"))
+                    if (SendMsgDTOToMaster("PASS", MsgType.PASS))
                     {
                         string receiveMsg;
                         ReceiveMsgByMaster(out receiveMsg);//阻塞，接收主控的回复消息
@@ -170,6 +172,7 @@ namespace LogWatcher.Utils
                 {
                     try
                     {
+                        this.client?.Close();//关闭之前的TcpClient对象
                         this.client = new TcpClient(AddressFamily.InterNetwork);
                         await this.client.ConnectAsync(this.masterIPAddress, this.masterPort);
                         if (SendMsgDTOToMaster(msg))
@@ -177,9 +180,9 @@ namespace LogWatcher.Utils
                             string receiveMsg;
                             ReceiveMsgByMaster(out receiveMsg);//阻塞，接收主控的回复消息
                             PrintMessage?.Invoke(receiveMsg);
+                            this.isConnecting = false;
                             break;
                         }
-                        this.isConnecting = false;
                     }
                     catch (Exception e)
                     {
@@ -201,12 +204,18 @@ namespace LogWatcher.Utils
 
         private bool SendMsgDTOToMaster(string msg)
         {
+            return SendMsgDTOToMaster(msg, MsgType.None);
+        }
+
+        private bool SendMsgDTOToMaster(string msg, MsgType type)
+        {
             bool send = false;
             try
             {
                 if (this.client.Connected)
                 {
                     MsgDTO msgDTO = new MsgDTO(msg);
+                    msgDTO.Type = type;
                     IPEndPoint iPEndPoint = this.client.Client.LocalEndPoint as IPEndPoint;
                     if (iPEndPoint != null)
                     {

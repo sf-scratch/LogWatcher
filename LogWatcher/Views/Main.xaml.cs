@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Ribbon;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -19,6 +20,7 @@ namespace LogWatcher.Views
     /// </summary>
     public partial class Main : Window
     {
+
         public Main()
         {
             InitializeComponent();
@@ -42,6 +44,21 @@ namespace LogWatcher.Views
         }
 
         private void btnClose_Click(object sender, RoutedEventArgs e)
+        {
+            this.Hide();
+        }
+
+        private void NotifyIcon_TrayMouseDoubleClick(object sender, RoutedEventArgs e)
+        {
+            this.Show();
+        }
+
+        private void ShowLogWatcher_Click(object sender, RoutedEventArgs e)
+        {
+            this.Show();
+        }
+
+        private void ExitLogWatcher_Click(object sender, RoutedEventArgs e)
         {
             Environment.Exit(0);
         }
