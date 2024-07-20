@@ -11,38 +11,55 @@
         xmlns:tb="http://www.hardcodet.net/taskbar"
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         mc:Ignorable="d"
-        Title="Log文件监视" Height="300" Width="900" WindowStyle="None">
+        Title="Log文件监视" Height="300" Width="900" WindowStyle="None" Topmost="{Binding Topmost}">
     <Grid>
-        <DockPanel>
-            <!--最小化托盘图标-->
-            <tb:TaskbarIcon x:Name="NotifyIcon" IconSource="/Image/LogIcon.ico" TrayMouseDoubleClick="NotifyIcon_TrayMouseDoubleClick">
-                <tb:TaskbarIcon.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem x:Name="ShowLogWatcher" Header="显示" Click="ShowLogWatcher_Click"/>
-                        <MenuItem x:Name="ExitLogWatcher" Header="退出" Click="ExitLogWatcher_Click"/>
-                    </ContextMenu>
-                </tb:TaskbarIcon.ContextMenu>
-            </tb:TaskbarIcon>
-            
-            <md:ColorZone DockPanel.Dock="Top" Mode="PrimaryMid">
-                <DockPanel>
-                    <StackPanel Orientation="Horizontal"  DockPanel.Dock="Right">
-                        <CheckBox Style="{StaticResource MaterialDesignDarkCheckBox}" Content="自动重连" IsChecked="{Binding IsAutoReconnection}"/>
-                        <Button x:Name="btnMin" Content="—" Style="{StaticResource MaterialDesignFlatMidBgButton}" Click="btnMin_Click"/>
-                        <Button x:Name="btnMax" Content="☐" Style="{StaticResource MaterialDesignFlatMidBgButton}" Click="btnMax_Click"/>
-                        <Button x:Name="btnClose" Content="✕" Style="{StaticResource MaterialDesignFlatMidBgButton}" Click="btnClose_Click"/>
-                    </StackPanel>
-                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" extensions:DraggableWindowBehavior.IsDraggable="True" FontSize="15" Text="Log文件监视"/>
-                </DockPanel>
-            </md:ColorZone>
-            <custemControl:ShowLastListBox md:ListBoxItemAssist.ShowSelection="False" DockPanel.Dock="Top" HorizontalContentAlignment="Stretch" ScrollViewer.VerticalScrollBarVisibility="Hidden"
-                                           ItemsSource="{Binding MessageList}" extensions:DraggableWindowBehavior.IsDraggable="True">
-                <custemControl:ShowLastListBox.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Foreground="Black" Text="{Binding}" />
-                    </DataTemplate>
-                </custemControl:ShowLastListBox.ItemTemplate>
-            </custemControl:ShowLastListBox>
-        </DockPanel>
+        <md:DialogHost x:Name="dialogHost" 
+                       DialogClosed="dialogHost_DialogClosed"
+                       DialogOpened="DialogHost_DialogOpened"
+                       DialogContentUniformCornerRadius="10"
+                       DialogTheme="Inherit">
+            <md:DialogHost.DialogContent>
+                <StackPanel Margin="10" x:Name="dialogContent">
+                    <CheckBox Style="{StaticResource MaterialDesignDarkCheckBox}" Content="窗口显示在最前" IsChecked="{Binding Topmost}"/>
+                    <CheckBox Style="{StaticResource MaterialDesignDarkCheckBox}" Content="自动重连" IsChecked="{Binding IsAutoReconnection}"/>
+                </StackPanel>
+            </md:DialogHost.DialogContent>
+
+            <DockPanel>
+                <!--最小化托盘图标-->
+                <tb:TaskbarIcon x:Name="NotifyIcon" IconSource="/Image/LogIcon.ico" TrayMouseDoubleClick="NotifyIcon_TrayMouseDoubleClick">
+                    <tb:TaskbarIcon.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem x:Name="ShowLogWatcher" Header="显示" Click="ShowLogWatcher_Click"/>
+                            <MenuItem x:Name="ExitLogWatcher" Header="退出" Click="ExitLogWatcher_Click"/>
+                        </ContextMenu>
+                    </tb:TaskbarIcon.ContextMenu>
+                </tb:TaskbarIcon>
+
+                <md:ColorZone DockPanel.Dock="Top" Mode="PrimaryMid">
+                    <DockPanel>
+                        <StackPanel Orientation="Horizontal"  DockPanel.Dock="Right" Cursor="">
+                            <Button x:Name="btnConfigure" Style="{StaticResource MaterialDesignFlatMidBgButton}" Command="{x:Static md:DialogHost.OpenDialogCommand}">
+                                <md:PackIcon Kind="CogOutline" />
+                            </Button>
+                            <Button x:Name="btnMin" Content="—" Style="{StaticResource MaterialDesignFlatMidBgButton}" Click="btnMin_Click"/>
+                            <Button x:Name="btnMax" Content="☐" Style="{StaticResource MaterialDesignFlatMidBgButton}" Click="btnMax_Click"/>
+                            <Button x:Name="btnClose" Content="✕" Style="{StaticResource MaterialDesignFlatMidBgButton}" Click="btnClose_Click"/>
+                        </StackPanel>
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" extensions:DraggableWindowBehavior.IsDraggable="True" FontSize="15" Text="Log文件监视"/>
+                    </DockPanel>
+                </md:ColorZone>
+                <custemControl:ShowLastListBox md:ListBoxItemAssist.ShowSelection="False" DockPanel.Dock="Top" HorizontalContentAlignment="Stretch" ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                                   ItemsSource="{Binding MessageList}" extensions:DraggableWindowBehavior.IsDraggable="True">
+                    <custemControl:ShowLastListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Foreground="Black" Text="{Binding}" />
+                        </DataTemplate>
+                    </custemControl:ShowLastListBox.ItemTemplate>
+                </custemControl:ShowLastListBox>
+            </DockPanel>
+        </md:DialogHost>
+
+
     </Grid>
 </Window>

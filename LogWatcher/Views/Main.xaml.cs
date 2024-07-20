@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MaterialDesignThemes.Wpf;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -24,6 +25,11 @@ namespace LogWatcher.Views
         public Main()
         {
             InitializeComponent();
+        }
+
+        protected override void OnInitialized(EventArgs e)
+        {
+            base.OnInitialized(e);
         }
 
         private void btnMin_Click(object sender, RoutedEventArgs e)
@@ -61,6 +67,26 @@ namespace LogWatcher.Views
         private void ExitLogWatcher_Click(object sender, RoutedEventArgs e)
         {
             Environment.Exit(0);
+        }
+
+        private void DialogHost_DialogOpened(object sender, MaterialDesignThemes.Wpf.DialogOpenedEventArgs eventArgs)
+        {
+            this.MouseDown += CheckClickOutsideDialog;
+        }
+
+        private void dialogHost_DialogClosed(object sender, DialogClosedEventArgs eventArgs)
+        {
+            this.MouseDown -= CheckClickOutsideDialog;
+        }
+
+        private void CheckClickOutsideDialog(object sender, MouseButtonEventArgs e)
+        {
+            // 检查点击位置是否在当前窗体内，对话框之外
+            if (Mouse.Captured is null && this.IsMouseOver && !this.dialogContent.IsMouseOver)
+            {
+                //关闭对话框
+                DialogHost.CloseDialogCommand.Execute(null, this.dialogHost);
+            }
         }
     }
 }

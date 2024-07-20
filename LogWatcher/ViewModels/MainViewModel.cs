@@ -21,14 +21,36 @@ namespace LogWatcher.ViewModels
 
         private ObservableCollection<string> messageList;
 
+        /// <summary>
+        /// 消息集合
+        /// </summary>
         public ObservableCollection<string> MessageList
         {
             get { return messageList; }
             set { messageList = value; }
         }
 
+        private bool topmost;
+
+        /// <summary>
+        /// 窗口显示在最前端
+        /// </summary>
+        public bool Topmost
+        {
+            get { return topmost; }
+            set
+            {
+                topmost = value;
+                RaisePropertyChanged();
+            }
+        }
+
+
         private bool isAutoReconnection;
 
+        /// <summary>
+        /// 自动重连
+        /// </summary>
         public bool IsAutoReconnection
         {
             get { return this.logServer.IsAutoReconnection; }
@@ -42,6 +64,7 @@ namespace LogWatcher.ViewModels
         public MainViewModel()
         {
             this.messageList = new ObservableCollection<string>();
+            this.topmost = true;
             OpenLogServer();
         }
 

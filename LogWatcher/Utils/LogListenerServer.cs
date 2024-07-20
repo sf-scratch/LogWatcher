@@ -60,7 +60,6 @@ namespace LogWatcher.Utils
             }
         }
 
-
         public LogListenerServer(string ngPath, string passPath, IPAddress masterIPAddress, int masterPort)
         {
             this.isAutoReconnection = true;
